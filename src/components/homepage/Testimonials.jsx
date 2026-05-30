@@ -109,6 +109,7 @@ export default function TestimonialsSection() {
 		<section
 			ref={sectionRef}
 			className="bg-[#f5f3fc] w-full px-6 py-24 relative overflow-hidden mt-20"
+			id="reviews"
 		>
 			{/* Nav arrows */}
 			<div className="absolute top-10 right-8 sm:right-12 flex gap-2">

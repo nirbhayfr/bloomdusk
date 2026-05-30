@@ -1,268 +1,24 @@
-// HeroSection.jsx
-import {
-	ArrowUpRight,
-	ChevronLeft,
-	ChevronRight,
-	Menu,
-	X,
-	Search,
-	ShoppingBag,
-} from "lucide-react";
+// HeroSection.jsx — clean hero section with bestsellers slider
+// Headers and popups are now managed at the layout level.
+
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
+import { PRODUCTS } from "../../store/productSlice";
 
 /* ─── DATA ─────────────────────────────────────────────────────────── */
-const products = [
-	{
-		id: 1,
-		name: "Marine Noir",
-		category: "Hawas",
-		price: "50ml",
-		bg: "#ffffff",
-		accent: "#111111",
-		textColor: "#111111",
-		subColor: "#666666",
-		image: "/p-1.png",
-	},
-	{
-		id: 2,
-		name: "Ivory Oud",
-		category: "White Oud BV",
-		price: "50ml",
-		bg: "#ffffff",
-		accent: "#111111",
-		textColor: "#111111",
-		subColor: "#666666",
-		image: "/p-2.png",
-	},
-	{
-		id: 3,
-		name: "Pink Veil",
-		category: "Gucci Flora",
-		price: "50ml",
-		bg: "#ffffff",
-		accent: "#111111",
-		textColor: "#111111",
-		subColor: "#666666",
-		image: "/p-3.png",
-	},
-];
-
-const NAV_LINKS = ["Shop", "Collections", "Blog", "Support"];
-
-/* ─── HEADER ────────────────────────────────────────────────────────── */
-function Header() {
-	const [open, setOpen] = useState(false);
-	const [cartCount] = useState(0);
-
-	useEffect(() => {
-		document.body.style.overflow = open ? "hidden" : "";
-		return () => {
-			document.body.style.overflow = "";
-		};
-	}, [open]);
-
-	return (
-		<>
-			<style>{`
-        @keyframes drawerIn  { from { transform:translateX(100%); opacity:0 } to { transform:translateX(0);   opacity:1 } }
-        @keyframes drawerOut { from { transform:translateX(0);   opacity:1 } to { transform:translateX(100%); opacity:0 } }
-        @keyframes overlayIn { from { opacity:0 } to { opacity:1 } }
-        .drawer-link {
-          font-family:'DM Sans',sans-serif;
-          font-size:28px; font-weight:600;
-          letter-spacing:-0.04em;
-          color:#0f0f0f;
-          text-decoration:none;
-          display:block;
-          padding:10px 0;
-          transition:color 0.2s ease;
-          cursor:pointer;
-          border-bottom:1px solid rgba(0,0,0,0.06);
-        }
-        .drawer-link:last-child { border-bottom:none; }
-        .drawer-link:hover { color:#9b6bff; }
-        .hdr-link {
-          font-size:14px; font-weight:500; color:#000;
-          text-decoration:none; transition:opacity 0.2s;
-        }
-        .hdr-link:hover { opacity:0.55; }
-      `}</style>
-
-			{/* ── Pill navbar — fixed top-left ── */}
-			<header className="fixed top-8 left-8 z-50">
-				<nav className="flex items-center gap-5 rounded-2xl bg-[#F9F6FE] backdrop-blur-xl px-5 h-[64px] shadow-sm border border-white/40">
-					{/* Logo */}
-					<img src="/logo.png" alt="logo" className="w-28" />
-
-					{/* Desktop nav links */}
-					<div className="hidden md:flex items-center gap-7">
-						{NAV_LINKS.map((l) => (
-							<a key={l} href="#" className="hdr-link">
-								{l}
-							</a>
-						))}
-					</div>
-
-					{/* Icons — always visible */}
-					<div className="flex items-center gap-4 ml-1">
-						<button className="flex items-center justify-center">
-							<Search
-								size={19}
-								strokeWidth={2.3}
-								className="text-black"
-							/>
-						</button>
-
-						<div className="relative">
-							<ShoppingBag
-								size={19}
-								strokeWidth={2.3}
-								className="text-black"
-							/>
-							<div className="absolute -top-2 -right-2 flex items-center justify-center w-4 h-4 rounded-full bg-[#e7def8] text-[9px] font-semibold text-black">
-								{cartCount}
-							</div>
-						</div>
-
-						{/* Mobile hamburger — only on small screens */}
-						<button
-							onClick={() => setOpen(true)}
-							className="flex md:hidden items-center justify-center w-9 h-9 rounded-xl bg-black/[0.07] border border-black/10"
-						>
-							<Menu
-								size={17}
-								strokeWidth={2.5}
-								className="text-black"
-							/>
-						</button>
-					</div>
-				</nav>
-			</header>
-
-			{/* ── Drawer overlay ── */}
-			{open && (
-				<div
-					onClick={() => setOpen(false)}
-					style={{
-						position: "fixed",
-						inset: 0,
-						zIndex: 90,
-						background: "rgba(0,0,0,0.4)",
-						backdropFilter: "blur(6px)",
-						animation: "overlayIn 0.3s ease",
-					}}
-				/>
-			)}
-
-			{/* ── Drawer panel ── */}
-			<div
-				style={{
-					position: "fixed",
-					top: 0,
-					right: 0,
-					bottom: 0,
-					width: "min(320px,85vw)",
-					zIndex: 100,
-					background: "#F9F6FE",
-					padding: "32px 28px",
-					display: "flex",
-					flexDirection: "column",
-					animation: open
-						? "drawerIn 0.4s cubic-bezier(0.22,1,0.36,1)"
-						: "drawerOut 0.35s ease forwards",
-					pointerEvents: open ? "auto" : "none",
-				}}
-			>
-				{/* Drawer header */}
-				<div
-					style={{
-						display: "flex",
-						justifyContent: "space-between",
-						alignItems: "center",
-						marginBottom: "40px",
-					}}
-				>
-					<img src="/logo.png" alt="logo" className="w-28" />
-					<button
-						onClick={() => setOpen(false)}
-						style={{
-							width: "36px",
-							height: "36px",
-							borderRadius: "12px",
-							background: "rgba(15,15,15,0.07)",
-							border: "1px solid rgba(15,15,15,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							cursor: "pointer",
-						}}
-					>
-						<X size={16} color="#0f0f0f" strokeWidth={2.5} />
-					</button>
-				</div>
-
-				{/* Links */}
-				<nav style={{ flex: 1 }}>
-					{NAV_LINKS.map((l) => (
-						<div
-							key={l}
-							className="drawer-link"
-							onClick={() => setOpen(false)}
-						>
-							{l}
-						</div>
-					))}
-				</nav>
-
-				{/* Bottom CTA */}
-				<button
-					onClick={() => setOpen(false)}
-					style={{
-						width: "100%",
-						padding: "16px",
-						borderRadius: "16px",
-						background: "#0f0f0f",
-						color: "#fff",
-						fontFamily: "'DM Sans',sans-serif",
-						fontSize: "14px",
-						fontWeight: 700,
-						border: "none",
-						cursor: "pointer",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						gap: "10px",
-					}}
-				>
-					Shop Now <ArrowUpRight size={16} strokeWidth={2.5} />
-				</button>
-
-				<p
-					style={{
-						fontFamily: "'DM Sans',sans-serif",
-						fontSize: "11px",
-						color: "rgba(15,15,15,0.35)",
-						textAlign: "center",
-						marginTop: "14px",
-						letterSpacing: "0.3px",
-					}}
-				>
-					Free shipping · Worldwide delivery
-				</p>
-			</div>
-		</>
-	);
-}
+const products = PRODUCTS;
 
 /* ─── PRODUCT CARD ──────────────────────────────────────────────────── */
-function ProductCard({ product }) {
+function ProductCard({ product, onClick }) {
 	const [hovered, setHovered] = useState(false);
 
 	return (
 		<div
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
+			onClick={onClick}
 			style={{
 				flex: "0 0 200px",
 				borderRadius: "20px",
@@ -282,7 +38,6 @@ function ProductCard({ product }) {
 				position: "relative",
 			}}
 		>
-			{/* Glow orb */}
 			<div
 				style={{
 					position: "absolute",
@@ -299,8 +54,6 @@ function ProductCard({ product }) {
 					pointerEvents: "none",
 				}}
 			/>
-
-			{/* Image */}
 			<div
 				style={{
 					padding: "22px 18px 10px",
@@ -324,10 +77,9 @@ function ProductCard({ product }) {
 							"transform 0.4s cubic-bezier(0.22,1,0.36,1)",
 						filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.12))",
 					}}
+					className="mix-blend-multiply"
 				/>
 			</div>
-
-			{/* Info */}
 			<div style={{ padding: "8px 16px 18px" }}>
 				<p
 					style={{
@@ -354,7 +106,6 @@ function ProductCard({ product }) {
 				>
 					{product.name}
 				</p>
-
 				<div
 					style={{
 						display: "flex",
@@ -370,9 +121,13 @@ function ProductCard({ product }) {
 							fontWeight: 500,
 						}}
 					>
-						{product.price}
+						{product.size}
 					</span>
 					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							onClick();
+						}}
 						style={{
 							width: "30px",
 							height: "30px",
@@ -407,39 +162,73 @@ function ProductSlider() {
 	const startX = useRef(0);
 	const scrollLeft = useRef(0);
 	const [activeIdx, setActiveIdx] = useState(0);
+	const navigate = useNavigate();
+
+	const startXPos = useRef(0);
+	const startYPos = useRef(0);
+	const hasDragged = useRef(false);
 
 	const onPointerDown = (e) => {
+		if (e.button !== 0) return; // only left click
 		isDragging.current = true;
 		startX.current = e.clientX - trackRef.current.offsetLeft;
 		scrollLeft.current = trackRef.current.scrollLeft;
+
+		startXPos.current = e.clientX;
+		startYPos.current = e.clientY;
+		hasDragged.current = false;
+
 		trackRef.current.style.cursor = "grabbing";
-		trackRef.current.setPointerCapture(e.pointerId);
 	};
-	const onPointerMove = (e) => {
-		if (!isDragging.current) return;
-		e.preventDefault();
-		const x = e.clientX - trackRef.current.offsetLeft;
-		const walk = (x - startX.current) * 1.2;
-		trackRef.current.scrollLeft = scrollLeft.current - walk;
-	};
-	const stopDrag = () => {
-		isDragging.current = false;
-		if (trackRef.current) trackRef.current.style.cursor = "grab";
-	};
+
+	useEffect(() => {
+		const handlePointerMove = (e) => {
+			if (!isDragging.current) return;
+			const dx = Math.abs(e.clientX - startXPos.current);
+			const dy = Math.abs(e.clientY - startYPos.current);
+
+			// If moved more than 5px, it's a drag (so suppress click action)
+			if (dx > 5 || dy > 5) {
+				hasDragged.current = true;
+			}
+
+			const x = e.clientX - trackRef.current.offsetLeft;
+			trackRef.current.scrollLeft =
+				scrollLeft.current - (x - startX.current) * 1.2;
+		};
+
+		const handlePointerUp = () => {
+			if (!isDragging.current) return;
+			isDragging.current = false;
+			if (trackRef.current) trackRef.current.style.cursor = "grab";
+		};
+
+		window.addEventListener("pointermove", handlePointerMove);
+		window.addEventListener("pointerup", handlePointerUp);
+
+		return () => {
+			window.removeEventListener("pointermove", handlePointerMove);
+			window.removeEventListener("pointerup", handlePointerUp);
+		};
+	}, []);
+
 	const scrollTo = (dir) => {
 		trackRef.current.scrollBy({
 			left: dir * (200 + 14),
 			behavior: "smooth",
 		});
 	};
+
 	const handleScroll = () => {
-		const cardW = 200 + 14;
-		setActiveIdx(Math.round(trackRef.current.scrollLeft / cardW));
+		if (trackRef.current) {
+			setActiveIdx(
+				Math.round(trackRef.current.scrollLeft / (200 + 14)),
+			);
+		}
 	};
 
 	return (
 		<div style={{ position: "relative", width: "100%" }}>
-			{/* Label row */}
 			<div
 				style={{
 					display: "flex",
@@ -476,7 +265,6 @@ function ProductSlider() {
 						Bestsellers
 					</h3>
 				</div>
-
 				<div style={{ display: "flex", gap: "8px" }}>
 					{[-1, 1].map((dir) => {
 						const Icon =
@@ -519,13 +307,9 @@ function ProductSlider() {
 				</div>
 			</div>
 
-			{/* Track */}
 			<div
 				ref={trackRef}
 				onPointerDown={onPointerDown}
-				onPointerMove={onPointerMove}
-				onPointerUp={stopDrag}
-				onPointerCancel={stopDrag}
 				onScroll={handleScroll}
 				style={{
 					display: "flex",
@@ -540,12 +324,19 @@ function ProductSlider() {
 				}}
 			>
 				{products.map((p) => (
-					<ProductCard key={p.id} product={p} />
+					<ProductCard
+						key={p.id}
+						product={p}
+						onClick={() => {
+							if (!hasDragged.current) {
+								navigate(`/product/${p.id}`);
+							}
+						}}
+					/>
 				))}
 				<div style={{ flex: "0 0 8px" }} />
 			</div>
 
-			{/* Dots */}
 			<div
 				style={{
 					display: "flex",
@@ -577,6 +368,7 @@ function ProductSlider() {
 /* ─── HERO SECTION ───────────────────────────────────────────────────── */
 export default function HeroSection() {
 	const heroRef = useRef(null);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		const ctx = gsap.context(() => {
@@ -594,13 +386,6 @@ export default function HeroSection() {
 				delay: 0.25,
 				ease: "power3.out",
 			});
-			gsap.from(".hero-btn", {
-				y: 30,
-				opacity: 0,
-				duration: 1,
-				delay: 0.4,
-				ease: "power3.out",
-			});
 			gsap.from(".slider-wrap", {
 				y: 50,
 				opacity: 0,
@@ -616,45 +401,17 @@ export default function HeroSection() {
 		<>
 			<style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&display=swap');
-
         *, *::before, *::after { box-sizing:border-box; }
-
-        /* Hero layout */
-        .hero-inner {
-          display:flex;
-          flex-direction:row;
-          align-items:center;
-          height:100%;
-          padding:80px 40px 40px;
-          gap:40px;
-        }
+        .hero-inner { display:flex; flex-direction:row; align-items:center; height:100%; padding:100px 40px 40px; gap:40px; }
         .hero-copy   { flex:1; display:flex; flex-direction:column; justify-content:center; }
         .slider-wrap { width:clamp(260px,38%,480px); flex-shrink:0; }
-
         @media(max-width:768px) {
-          .hero-inner {
-            flex-direction:column;
-            justify-content:flex-start;
-            padding:80px 20px 24px;
-            gap:0;
-            overflow-y:auto;
-          }
-          .hero-copy {
-            width:100%;
-            padding-bottom:0;
-            align-items:center;
-            text-align:center;
-          }
-          .hero-copy h1   { font-size:clamp(2.2rem,8vw,3rem) !important; margin-bottom:16px !important; }
-          .hero-copy p    { font-size:14px !important; margin-bottom:28px !important; }
-          .slider-wrap {
-            width:100%;
-            padding-top:32px;
-            flex-shrink:0;
-          }
+          .hero-inner { flex-direction:column; justify-content:flex-start; padding:100px 20px 24px; gap:0; overflow-y:auto; }
+          .hero-copy { width:100%; padding-bottom:0; align-items:center; text-align:center; }
+          .hero-copy h1 { font-size:clamp(2.2rem,8vw,3rem) !important; margin-bottom:16px !important; }
+          .hero-copy p { font-size:14px !important; margin-bottom:28px !important; }
+          .slider-wrap { width:100%; padding-top:32px; flex-shrink:0; }
         }
-
-        /* Hide webkit scrollbar on slider */
         div::-webkit-scrollbar { display:none; }
       `}</style>
 
@@ -694,7 +451,7 @@ export default function HeroSection() {
 						<source src="/vid.mp4" type="video/mp4" />
 					</video>
 
-					{/* Subtle overlay for readability */}
+					{/* Overlay */}
 					<div
 						style={{
 							position: "absolute",
@@ -705,15 +462,10 @@ export default function HeroSection() {
 						}}
 					/>
 
-					{/* Header */}
-					<Header />
-
-					{/* Main layout */}
 					<div
 						className="hero-inner"
 						style={{ position: "relative", zIndex: 10 }}
 					>
-						{/* LEFT / TOP — copy */}
 						<div className="hero-copy">
 							<h1
 								className="hero-title"
@@ -754,97 +506,26 @@ export default function HeroSection() {
 								room.
 							</p>
 
-							{/* CTA */}
-							<div className="hero-btn">
-								<button
-									style={{
-										border: "none",
-										cursor: "pointer",
-										background: "white",
-										borderRadius: "999px",
-										padding: "1px",
-										boxShadow:
-											"0 2px 12px rgba(0,0,0,0.12)",
-										transition:
-											"box-shadow 0.3s ease, transform 0.3s ease",
-										position: "relative",
-										overflow: "hidden",
-									}}
-									onMouseEnter={(e) => {
-										e.currentTarget.style.boxShadow =
-											"0 6px 24px rgba(0,0,0,0.18)";
-										e.currentTarget.style.transform =
-											"translateY(-1px)";
-									}}
-									onMouseLeave={(e) => {
-										e.currentTarget.style.boxShadow =
-											"0 2px 12px rgba(0,0,0,0.12)";
-										e.currentTarget.style.transform =
-											"translateY(0)";
-									}}
-								>
-									<div
-										style={{
-											position: "absolute",
-											inset: 0,
-											borderRadius: "999px",
-											background:
-												"linear-gradient(to right,rgba(0,0,0,0.12),rgba(0,0,0,0.04),rgba(0,0,0,0.12))",
-											opacity: 0.6,
-										}}
-									/>
-									<div
-										style={{
-											position: "relative",
-											zIndex: 1,
-											display: "flex",
-											alignItems: "center",
-											borderRadius: "999px",
-										}}
-									>
-										<span
-											style={{
-												paddingLeft: "22px",
-												fontFamily:
-													"'DM Sans',sans-serif",
-												fontSize: "13px",
-												fontWeight: 700,
-												color: "#0f0f0f",
-												letterSpacing:
-													"0.2px",
-											}}
-										>
-											Shop Fragrances
-										</span>
-										<div
-											style={{
-												marginLeft: "20px",
-												width: "48px",
-												height: "48px",
-												borderRadius: "50%",
-												background:
-													"#0f0f0f",
-												display: "flex",
-												alignItems:
-													"center",
-												justifyContent:
-													"center",
-												boxShadow:
-													"0 4px 20px rgba(0,0,0,0.2)",
-											}}
-										>
-											<ArrowUpRight
-												size={20}
-												strokeWidth={2.3}
-												color="#fff"
-											/>
-										</div>
+							<button
+								onClick={() => navigate("/product/1")}
+								className="group relative overflow-hidden rounded-full bg-white p-[1px] shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_6px_24px_rgba(0,0,0,0.18)] w-fit"
+							>
+								<div className="absolute right-0 top-0 h-full w-0 rounded-full bg-[#9B6BFF] transition-all duration-500 ease-out group-hover:left-0 group-hover:w-full" />
+								<div className="relative z-10 flex items-center rounded-full bg-white group-hover:bg-transparent transition-colors duration-500">
+									<span className="pl-[22px] font-semibold text-sm tracking-[0.2px] text-[#0f0f0f] transition-colors duration-500 group-hover:text-white">
+										Shop Fragrances
+									</span>
+									<div className="ml-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#9B6BFF] shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-colors duration-500 group-hover:bg-white">
+										<ArrowUpRight
+											size={20}
+											strokeWidth={2.3}
+											className="text-white transition-colors duration-500 group-hover:text-[#9B6BFF]"
+										/>
 									</div>
-								</button>
-							</div>
+								</div>
+							</button>
 						</div>
 
-						{/* RIGHT / BOTTOM — slider */}
 						<div className="slider-wrap">
 							<ProductSlider />
 						</div>

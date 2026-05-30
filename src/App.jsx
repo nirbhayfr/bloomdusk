@@ -1,24 +1,26 @@
-import FeaturesSection from "./components/homepage/FeatureSection";
-import Footer from "./components/homepage/Footer";
-import HeroSection from "./components/homepage/Hero";
-import InstagramSection from "./components/homepage/Instagram";
-import MostPopular from "./components/homepage/MostPopular";
-import ProductFeature from "./components/homepage/ProductFeature";
-import TestimonialsSection from "./components/homepage/Testimonials";
-import VideoSection from "./components/homepage/VideoSection";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import AppLayout from "./components/layout/AppLayout";
+import Homepage from "./pages/Homepage";
+import ProductPage from "./pages/ProductPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import CheckoutPage from "./pages/Checkout";
+import ScrollToTop from "./components/layout/ScrollToTop";
 
 function App() {
 	return (
-		<main className="font-inter">
-			<HeroSection />
-			<MostPopular />
-			<FeaturesSection />
-			<ProductFeature />
-			<TestimonialsSection />
-			<InstagramSection />
-			<VideoSection />
-			<Footer />
-		</main>
+		<BrowserRouter>
+			<ScrollToTop />
+			<Routes>
+				<Route path="/" element={<AppLayout />}>
+					<Route index element={<Homepage />} />
+					<Route path="product/:id" element={<ProductPage />} />
+					<Route path="login" element={<LoginPage />} />
+					<Route path="register" element={<RegisterPage />} />
+					<Route path="checkout" element={<CheckoutPage />} />
+				</Route>
+			</Routes>
+		</BrowserRouter>
 	);
 }
 

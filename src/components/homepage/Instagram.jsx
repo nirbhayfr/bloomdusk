@@ -68,6 +68,7 @@ export default function InstagramSection() {
 				paddingTop: "72px",
 				paddingBottom: "72px",
 			}}
+			id="social"
 		>
 			{/* Background blobs */}
 			<div

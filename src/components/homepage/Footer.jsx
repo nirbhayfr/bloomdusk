@@ -31,7 +31,7 @@ export default function Footer() {
 							Thanks for joining! Check your inbox.
 						</p>
 					) : (
-						<div className="flex items-center bg-white rounded-md px-1 py-1 shadow-sm w-full max-w-xs">
+						<div className="flex w-full max-w-xs items-center rounded-md bg-white p-1 shadow-sm">
 							<input
 								type="email"
 								value={email}
@@ -42,11 +42,12 @@ export default function Footer() {
 									e.key === "Enter" && handleJoin()
 								}
 								placeholder="Your Email Address"
-								className="flex-1 bg-transparent outline-none text-sm text-gray-500 placeholder-gray-400 px-3"
+								className="min-w-0 flex-1 bg-transparent px-3 text-sm text-gray-500 placeholder-gray-400 outline-none"
 							/>
+
 							<button
 								onClick={handleJoin}
-								className="bg-[#6b3fd4] hover:bg-[#5a32b5] text-white text-sm font-semibold px-5 py-2.5 rounded-md transition-colors"
+								className="shrink-0 rounded-md bg-[#6b3fd4] px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#5a32b5] sm:px-5"
 							>
 								Join
 							</button>

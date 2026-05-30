@@ -1,6 +1,6 @@
 export default function ProductFeature() {
 	return (
-		<div className="bg-white font-sans">
+		<div className="bg-white font-sans" id="featured">
 			<div className="bg-[#EDE4FC] rounded-b-3xl px-6 pt-20 pb-32 text-center">
 				{/* Badge */}
 				<div className="inline-block bg-white rounded-full px-4 py-1 text-sm text-gray-700 font-medium mb-6 shadow-sm">

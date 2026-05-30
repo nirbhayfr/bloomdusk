@@ -1,50 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { Sparkles } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { addToCart } from "../../store/cartSlice";
+import { PRODUCTS } from "../../store/productSlice";
 
-const products = [
-	{
-		id: 1,
-		name: "Marine Noir",
-		category: "Hawas",
-		price: "50ml",
-		description:
-			"Fresh aquatic accords blended with deep amber and marine woods.",
-		notes: ["Amber", "Marine", "Musk"],
-		bg: "#eef3f8",
-		image: "/p-1.png",
-	},
-
-	{
-		id: 2,
-		name: "Ivory Oud",
-		category: "White Oud BV",
-		price: "50ml",
-		description:
-			"Elegant oud signature layered with creamy woods and saffron.",
-		notes: ["Oud", "Saffron", "Vanilla"],
-		bg: "#f8f4ee",
-		image: "/p-2.png",
-	},
-
-	{
-		id: 3,
-		name: "Pink Veil",
-		category: "Gucci Flora",
-		price: "50ml",
-		description:
-			"Soft floral bouquet wrapped in powdery rose and jasmine.",
-		notes: ["Rose", "Jasmine", "Peony"],
-		bg: "#f8eef0",
-		image: "/p-3.png",
-	},
-];
+// Products are imported from the productSlice — single source of truth.
+const products = PRODUCTS;
 
 function ProductCard({ product, index }) {
+	const dispatch = useDispatch();
+	const navigate = useNavigate();
 	const cardRef = useRef(null);
 	const arrowRef = useRef(null);
 	const imageRef = useRef(null);
 	const buttonRef = useRef(null);
+	const [added, setAdded] = useState(false);
 
 	useEffect(() => {
 		gsap.fromTo(
@@ -164,12 +136,14 @@ function ProductCard({ product, index }) {
 			ref={cardRef}
 			onMouseMove={handleMouseMove}
 			onMouseLeave={resetCard}
+			onClick={() => navigate(`/product/${product.id}`)}
 			className="group relative flex min-h-[420px] cursor-pointer flex-col justify-between overflow-hidden rounded-[28px] p-5 transition-shadow duration-500 will-change-transform"
 			style={{
 				background: "#F9F6FE",
 				transformStyle: "preserve-3d",
 				boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
 			}}
+			id="shop"
 		>
 			{/* soft glow */}
 			<div className="pointer-events-none absolute inset-[-30%] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.65),transparent_60%)] opacity-70 transition-opacity duration-500 group-hover:opacity-100" />
@@ -192,7 +166,7 @@ function ProductCard({ product, index }) {
 					</div>
 
 					<p className="text-[12px] font-medium tracking-[0.04em] text-[#666]">
-						{product.price}
+						{product.size}
 					</p>
 				</div>
 
@@ -202,7 +176,7 @@ function ProductCard({ product, index }) {
 						ref={imageRef}
 						src={product.image}
 						alt={product.name}
-						className="h-full w-[76%] object-contain will-change-transform drop-shadow-[0_18px_30px_rgba(0,0,0,0.12)]"
+						className="h-full w-[76%] object-contain will-change-transform drop-shadow-[0_18px_30px_rgba(0,0,0,0.12)] mix-blend-multiply"
 					/>
 				</div>
 
@@ -227,11 +201,24 @@ function ProductCard({ product, index }) {
 				{/* add to cart */}
 				<button
 					ref={buttonRef}
-					className="group/button relative overflow-hidden rounded-full bg-[#111] px-3 py-2 text-[10px] tracking-[0.06em] text-white transition-all duration-300 hover:scale-[1.02] font-semibold"
+					onClick={(e) => {
+						e.stopPropagation();
+						dispatch(addToCart(product));
+						setAdded(true);
+						setTimeout(() => setAdded(false), 1400);
+					}}
+					className="group/button relative overflow-hidden rounded-full px-3 py-2 text-[10px] tracking-[0.06em] text-white transition-all duration-300 hover:scale-[1.02] font-semibold"
+					style={{
+						background: added ? "#22c55e" : "#111",
+						transition: "background 0.3s ease",
+					}}
 				>
-					<span className="relative z-10">ADD TO CART</span>
-
-					<div className="absolute inset-0 origin-left scale-x-0 bg-[#2a2a2a] transition-transform duration-500 group-hover/button:scale-x-100" />
+					<span className="relative z-10">
+						{added ? "✓ ADDED" : "ADD TO CART"}
+					</span>
+					{!added && (
+						<div className="absolute inset-0 origin-left scale-x-0 bg-[#2a2a2a] transition-transform duration-500 group-hover/button:scale-x-100" />
+					)}
 				</button>
 
 				{/* arrow */}
