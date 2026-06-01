@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import { Sparkles } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addToCart } from "../../store/cartSlice";
-import { PRODUCTS } from "../../store/productSlice";
-
-// Products are imported from the productSlice — single source of truth.
-const products = PRODUCTS;
+import { selectAllProducts } from "../../store/productSlice";
 
 function ProductCard({ product, index }) {
 	const dispatch = useDispatch();
@@ -248,6 +245,7 @@ export default function MostPopular() {
 	const titleRef = useRef(null);
 	const textRef = useRef(null);
 	const linkRef = useRef(null);
+	const products = useSelector(selectAllProducts);
 
 	useEffect(() => {
 		const tl = gsap.timeline({

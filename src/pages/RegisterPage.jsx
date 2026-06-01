@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
 	ArrowLeft,
 	ArrowUpRight,
@@ -12,9 +13,12 @@ import {
 	EyeOff,
 } from "lucide-react";
 import gsap from "gsap";
+import { register, selectAuth } from "../store/authSlice";
 
 export default function RegisterPage() {
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	const { loading, error } = useSelector(selectAuth);
 
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
@@ -22,7 +26,6 @@ export default function RegisterPage() {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [showPass, setShowPass] = useState(false);
 	const [showConfirmPass, setShowConfirmPass] = useState(false);
-	const [loading, setLoading] = useState(false);
 
 	const containerRef = useRef(null);
 
@@ -44,7 +47,7 @@ export default function RegisterPage() {
 		);
 	}, []);
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
 
 		if (password !== confirmPassword) {
@@ -52,12 +55,14 @@ export default function RegisterPage() {
 			return;
 		}
 
-		setLoading(true);
-
-		setTimeout(() => {
-			setLoading(false);
+		try {
+			await dispatch(
+				register({ name, email, password, confirmPassword }),
+			).unwrap();
 			navigate("/");
-		}, 1500);
+		} catch {
+			// error is rendered from auth state
+		}
 	};
 
 	return (
@@ -155,6 +160,11 @@ export default function RegisterPage() {
 									onSubmit={handleSubmit}
 									className="mt-10 space-y-5"
 								>
+									{error && (
+										<p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+											{error}
+										</p>
+									)}
 									{/* Name */}
 									<div>
 										<label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9b6bff]">

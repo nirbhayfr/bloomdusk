@@ -1,98 +1,117 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { API_BASE_URL } from "../utils/api";
 
-// ─── PRODUCT CATALOG ──────────────────────────────────────────────────────────
-// Single source of truth for ALL product data across the entire app.
-// Hero slider, MostPopular grid, ProductPage, and cart all read from here.
-
-export const PRODUCTS = [
+const THEME_DEFAULTS = [
 	{
-		id: 1,
-		name: "Marine Noir",
-		category: "Hawas",
-		price: 779,
-		originalPrice: 999,
-		size: "50ml",
-		description:
-			"Fresh aquatic accords blended with deep amber and marine woods. An audacious scent for those who carry the ocean within them — cool on the surface, unfathomably deep beneath.",
-		notes: {
-			top: ["Sea Salt", "Bergamot"],
-			heart: ["Amber", "Marine Accord"],
-			base: ["Musk", "Driftwood", "Vetiver"],
-		},
-		tags: ["Aquatic", "Unisex", "Long-lasting"],
-		rating: 4.8,
-		reviews: 312,
 		bg: "#eef3f8",
 		accent: "#1a3a5c",
-		pill: "#d0e4f5",
 		textColor: "#111111",
 		subColor: "#666666",
-		image: "/p-1-1.png",
-		images: ["/p-1-1.png", "/p-1-2.png", "/p-1-3.png"],
 	},
 	{
-		id: 2,
-		name: "Ivory Oud",
-		category: "White Oud BV",
-		price: 789,
-		originalPrice: 1199,
-		size: "50ml",
-		description:
-			"Elegant oud signature layered with creamy woods and saffron. A whisper of the ancient East rendered in the softest possible light — luminous, rare, and endlessly captivating.",
-		notes: {
-			top: ["Saffron", "Cardamom"],
-			heart: ["Rose", "Oud"],
-			base: ["Vanilla", "Sandalwood", "Amber"],
-		},
-		tags: ["Oriental", "Woody", "Unisex"],
-		rating: 4.9,
-		reviews: 208,
 		bg: "#f8f4ee",
 		accent: "#5c3a1a",
-		pill: "#f0e4d0",
 		textColor: "#111111",
 		subColor: "#666666",
-		image: "/p-2-3.png",
-		images: ["/p-2-1.png", "/p-2-2.png", "/p-2-3.png"],
 	},
 	{
-		id: 3,
-		name: "Pink Veil",
-		category: "Gucci Flora",
-		price: 999,
-		originalPrice: 1999,
-		size: "50ml",
-		description:
-			"Soft floral bouquet wrapped in powdery rose and jasmine. Like the first light of dawn filtering through petals — delicate, luminous, and impossibly feminine.",
-		notes: {
-			top: ["Peach", "Mandarin"],
-			heart: ["Rose", "Jasmine", "Peony"],
-			base: ["White Musk", "Iris", "Cedarwood"],
-		},
-		tags: ["Floral", "Feminine", "Romantic"],
-		rating: 4.7,
-		reviews: 445,
 		bg: "#f8eef0",
 		accent: "#5c1a2e",
-		pill: "#f5d0da",
 		textColor: "#111111",
 		subColor: "#666666",
-		image: "/p-3-2.png",
-		images: ["/p-3-1.png", "/p-3-2.png", "/p-3-3.png"],
 	},
 ];
+
+const getCategoryName = (product) => {
+	if (typeof product.category === "object" && product.category?.name) {
+		return product.category.name;
+	}
+
+	return product.categoryName || product.category || "Fragrance";
+};
+
+export const normalizeProduct = (product, index = 0) => {
+	const theme = THEME_DEFAULTS[index % THEME_DEFAULTS.length];
+	const images = product.images?.length
+		? product.images.map((image) => image.url || image).filter(Boolean)
+		: product.image
+			? [product.image]
+			: ["/bottle.png"];
+
+	return {
+		...theme,
+		...product,
+		id: product.slug || product._id || product.id,
+		backendId: product._id,
+		name: product.title || product.name,
+		category: getCategoryName(product),
+		price: product.price,
+		originalPrice: product.originalPrice,
+		size: product.size || "50ml",
+		description: product.description || "",
+		notes: product.notes || {
+			top: [],
+			heart: [],
+			base: [],
+		},
+		tags: product.tags || [],
+		rating: product.ratingAverage || product.rating || 4.8,
+		reviews: product.ratingCount || product.reviews || 0,
+		image: images[0],
+		images,
+	};
+};
+
+export const fetchProducts = createAsyncThunk(
+	"products/fetchProducts",
+	async (_, { rejectWithValue }) => {
+		try {
+			const response = await fetch(
+				`${API_BASE_URL}/product?status=active&limit=100&sort=oldest`,
+			);
+
+			if (!response.ok) {
+				throw new Error("Unable to fetch products");
+			}
+
+			const result = await response.json();
+			return (result.data || []).map(normalizeProduct);
+		} catch (error) {
+			return rejectWithValue(error.message);
+		}
+	},
+);
 
 const productsSlice = createSlice({
 	name: "products",
 	initialState: {
-		items: PRODUCTS,
+		items: [],
+		loading: false,
+		error: null,
 	},
 	reducers: {},
+	extraReducers: (builder) => {
+		builder
+			.addCase(fetchProducts.pending, (state) => {
+				state.loading = true;
+				state.error = null;
+			})
+			.addCase(fetchProducts.fulfilled, (state, action) => {
+				state.loading = false;
+				state.items = action.payload;
+			})
+			.addCase(fetchProducts.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload || "Unable to fetch products";
+			});
+	},
 });
 
 // ─── SELECTORS ────────────────────────────────────────────────────────────────
 export const selectAllProducts = (state) => state.products.items;
+export const selectProductsLoading = (state) => state.products.loading;
+export const selectProductsError = (state) => state.products.error;
 export const selectProductById = (id) => (state) =>
-	state.products.items.find((p) => p.id === id);
+	state.products.items.find((p) => String(p.id) === String(id));
 
 export default productsSlice.reducer;

@@ -108,7 +108,7 @@ export default function ProductPage() {
 	const dispatch = useDispatch();
 
 	const product =
-		useSelector(selectProductById(Number(id))) ||
+		useSelector(selectProductById(id)) ||
 		useSelector(selectAllProducts)[0];
 
 	const [activeImg, setActiveImg] = useState(0);

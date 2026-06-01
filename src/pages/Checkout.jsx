@@ -31,6 +31,77 @@ import {
 	removeFromCart,
 	clearCart,
 } from "../store/cartSlice"; // adjust path if needed
+import {
+	selectIsAuthenticated,
+	selectUser,
+	updateShippingAddress,
+} from "../store/authSlice";
+import { apiRequest } from "../utils/api";
+
+const shippingAddressToForm = (saved) => {
+	if (!saved) return {};
+
+	return {
+		line1: saved.addressLine1 || "",
+		line2: saved.addressLine2 || "",
+		city: saved.city || "",
+		state: saved.state || "",
+		pincode: saved.pinCode || "",
+		country: saved.country || "India",
+	};
+};
+
+const savedCheckoutToForm = (data) => {
+	if (!data) return {};
+
+	if (data.shippingAddress || data.phone) {
+		return {
+			...shippingAddressToForm(data.shippingAddress),
+			...(data.phone ? { phone: data.phone } : {}),
+		};
+	}
+
+	return shippingAddressToForm(data);
+};
+
+const formToShippingPayload = (address) => ({
+	line1: address.line1,
+	line2: address.line2,
+	city: address.city,
+	state: address.state,
+	pincode: (address.pincode || "").replace(/\D/g, ""),
+	country: address.country || "India",
+	phone: address.phone,
+});
+
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+const loadRazorpayScript = () =>
+	new Promise((resolve, reject) => {
+		if (window.Razorpay) {
+			resolve(true);
+			return;
+		}
+
+		const script = document.createElement("script");
+		script.src = "https://checkout.razorpay.com/v1/checkout.js";
+		script.onload = () => resolve(true);
+		script.onerror = () => reject(new Error("Unable to load Razorpay"));
+		document.body.appendChild(script);
+	});
+
+const buildOrderPayload = ({ items, address, paymentMethod }) => ({
+	items: items.map((item) => ({
+		id: item.id,
+		name: item.name,
+		category: item.category,
+		price: item.price,
+		image: item.image,
+		qty: item.qty,
+	})),
+	shippingAddress: address,
+	paymentMethod,
+});
 
 /* ─────────────────────────────────────────────
    STEP BAR
@@ -328,7 +399,16 @@ function StepReview({ items, onNext }) {
 /* ─────────────────────────────────────────────
    STEP 2 — ADDRESS
 ───────────────────────────────────────────── */
-function StepAddress({ address, setAddress, onNext, onBack }) {
+function StepAddress({
+	address,
+	setAddress,
+	onNext,
+	onBack,
+	saveAddress,
+	setSaveAddress,
+	isAuthenticated,
+	savingAddress,
+}) {
 	const fields = [
 		{
 			key: "name",
@@ -433,23 +513,41 @@ function StepAddress({ address, setAddress, onNext, onBack }) {
 				))}
 			</div>
 
+			{isAuthenticated && (
+				<label className="flex cursor-pointer items-center gap-3 rounded-[14px] border border-black/[0.07] bg-white px-4 py-3.5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+					<input
+						type="checkbox"
+						checked={saveAddress}
+						onChange={(e) => setSaveAddress(e.target.checked)}
+						className="h-4 w-4 rounded border-black/20 text-[#9b6bff] focus:ring-[#9b6bff]"
+					/>
+					<span className="text-[12.5px] font-semibold text-[#0f0f0f]">
+						Save this address for future orders
+					</span>
+				</label>
+			)}
+
 			<div className="flex gap-3">
 				<button
 					type="button"
 					onClick={onBack}
-					className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] border border-black/[0.08] bg-white text-black/40 hover:border-black/20 hover:text-[#0f0f0f] transition-all cursor-pointer shadow-[0_1px_4px_rgba(0,0,0,0.04)]"
+					disabled={savingAddress}
+					className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] border border-black/[0.08] bg-white text-black/40 hover:border-black/20 hover:text-[#0f0f0f] transition-all cursor-pointer shadow-[0_1px_4px_rgba(0,0,0,0.04)] disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					<ArrowLeft size={17} />
 				</button>
 				<button
 					type="submit"
-					className="group flex h-12 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#0f0f0f] text-white text-[13px] font-extrabold tracking-[-0.01em] transition-all duration-300 hover:bg-[#9b6bff] cursor-pointer border-none"
+					disabled={savingAddress}
+					className="group flex h-12 flex-1 items-center justify-center gap-2 rounded-[14px] bg-[#0f0f0f] text-white text-[13px] font-extrabold tracking-[-0.01em] transition-all duration-300 hover:bg-[#9b6bff] cursor-pointer border-none disabled:opacity-60 disabled:cursor-not-allowed"
 				>
-					Continue to Payment
-					<ChevronRight
-						size={15}
-						className="transition-transform group-hover:translate-x-1"
-					/>
+					{savingAddress ? "Saving address…" : "Continue to Payment"}
+					{!savingAddress && (
+						<ChevronRight
+							size={15}
+							className="transition-transform group-hover:translate-x-1"
+						/>
+					)}
 				</button>
 			</div>
 		</form>
@@ -461,30 +559,6 @@ function StepAddress({ address, setAddress, onNext, onBack }) {
 ───────────────────────────────────────────── */
 function StepPayment({ total, address, onBack, onPlace, loading }) {
 	const [method, setMethod] = useState("cod");
-	const [card, setCard] = useState({
-		number: "",
-		expiry: "",
-		cvv: "",
-		name: "",
-	});
-
-	const fmt = (key, val) => {
-		if (key === "number") {
-			val = val
-				.replace(/\D/g, "")
-				.slice(0, 16)
-				.replace(/(.{4})/g, "$1 ")
-				.trim();
-		}
-		if (key === "expiry") {
-			val = val.replace(/\D/g, "").slice(0, 4);
-			if (val.length > 2) val = val.slice(0, 2) + "/" + val.slice(2);
-		}
-		if (key === "cvv") {
-			val = val.replace(/\D/g, "").slice(0, 3);
-		}
-		setCard((p) => ({ ...p, [key]: val }));
-	};
 
 	return (
 		<form
@@ -576,78 +650,16 @@ function StepPayment({ total, address, onBack, onPlace, loading }) {
 			{method === "online" && (
 				<div className="rounded-[18px] border border-black/[0.07] bg-white p-5 space-y-3 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
 					<p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#9b6bff] flex items-center gap-1.5">
-						<Lock size={9} /> Card Details
+						<Lock size={9} /> Razorpay Secure Checkout
 					</p>
-
-					{/* Number */}
-					<div className="flex h-12 items-center rounded-[14px] border border-black/[0.08] bg-[#fafafa] px-4 transition focus-within:border-[#9b6bff] focus-within:shadow-[0_0_0_3px_rgba(155,107,255,0.1)]">
-						<CreditCard
-							size={14}
-							className="text-black/25 flex-shrink-0"
-						/>
-						<input
-							type="text"
-							value={card.number}
-							onChange={(e) =>
-								fmt("number", e.target.value)
-							}
-							placeholder="1234  5678  9012  3456"
-							className="ml-3 w-full bg-transparent text-[13px] font-medium text-[#0f0f0f] placeholder-black/20 outline-none tracking-[0.08em]"
-							required={method === "online"}
-						/>
-					</div>
-
-					<div className="grid grid-cols-2 gap-3">
-						<div className="flex h-12 items-center rounded-[14px] border border-black/[0.08] bg-[#fafafa] px-4 transition focus-within:border-[#9b6bff] focus-within:shadow-[0_0_0_3px_rgba(155,107,255,0.1)]">
-							<input
-								type="text"
-								value={card.expiry}
-								onChange={(e) =>
-									fmt("expiry", e.target.value)
-								}
-								placeholder="MM / YY"
-								className="w-full bg-transparent text-[13px] font-medium text-[#0f0f0f] placeholder-black/20 outline-none"
-								required={method === "online"}
-							/>
-						</div>
-						<div className="flex h-12 items-center rounded-[14px] border border-black/[0.08] bg-[#fafafa] px-4 transition focus-within:border-[#9b6bff] focus-within:shadow-[0_0_0_3px_rgba(155,107,255,0.1)]">
-							<input
-								type="text"
-								value={card.cvv}
-								onChange={(e) =>
-									fmt("cvv", e.target.value)
-								}
-								placeholder="CVV"
-								className="w-full bg-transparent text-[13px] font-medium text-[#0f0f0f] placeholder-black/20 outline-none tracking-[0.15em]"
-								required={method === "online"}
-							/>
-						</div>
-					</div>
-
-					<div className="flex h-12 items-center rounded-[14px] border border-black/[0.08] bg-[#fafafa] px-4 transition focus-within:border-[#9b6bff] focus-within:shadow-[0_0_0_3px_rgba(155,107,255,0.1)]">
-						<input
-							type="text"
-							value={card.name}
-							onChange={(e) =>
-								setCard((p) => ({
-									...p,
-									name: e.target.value,
-								}))
-							}
-							placeholder="Name on card"
-							className="w-full bg-transparent text-[13px] font-medium text-[#0f0f0f] placeholder-black/20 outline-none"
-							required={method === "online"}
-						/>
-					</div>
-
 					<div className="flex items-center gap-1.5 pt-0.5">
 						<ShieldCheck
 							size={12}
 							className="text-green-500 flex-shrink-0"
 						/>
 						<p className="text-[10px] font-medium text-black/35">
-							256-bit encrypted. Card details are never
-							stored.
+							You will complete UPI, card, wallet, or net
+							banking payment in Razorpay's secure checkout.
 						</p>
 					</div>
 				</div>
@@ -771,11 +783,16 @@ export default function CheckoutPage() {
 	const dispatch = useDispatch();
 	const items = useSelector(selectCartItems);
 	const total = useSelector(selectCartTotal);
+	const isAuthenticated = useSelector(selectIsAuthenticated);
+	const user = useSelector(selectUser);
 
 	const [step, setStep] = useState(1);
 	const [address, setAddress] = useState({});
+	const [saveAddress, setSaveAddress] = useState(true);
+	const [savingAddress, setSavingAddress] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [done, setDone] = useState(false);
+	const [error, setError] = useState("");
 
 	const pageRef = useRef(null);
 	const contentRef = useRef(null);
@@ -830,13 +847,189 @@ export default function CheckoutPage() {
 		});
 	};
 
-	const handlePlace = () => {
+	useEffect(() => {
+		if (!user) return;
+
+		setAddress((current) => ({
+			...current,
+			name:
+				current.name ||
+				[user.firstName, user.lastName].filter(Boolean).join(" "),
+			phone: current.phone || user.phone || "",
+			email: current.email || user.email || "",
+		}));
+	}, [user]);
+
+	useEffect(() => {
+		if (!isAuthenticated) return;
+
+		let cancelled = false;
+
+		const loadSavedAddress = async () => {
+			try {
+				const result = await apiRequest("/user/address");
+				if (cancelled || !result.data) return;
+
+				const savedFields = savedCheckoutToForm(result.data);
+				if (!Object.keys(savedFields).length) return;
+
+				setAddress((current) => ({
+					...current,
+					...savedFields,
+				}));
+			} catch {
+				if (cancelled || (!user?.shippingAddress && !user?.phone)) return;
+
+				setAddress((current) => ({
+					...current,
+					...savedCheckoutToForm({
+						shippingAddress: user.shippingAddress,
+						phone: user.phone,
+					}),
+				}));
+			}
+		};
+
+		loadSavedAddress();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [isAuthenticated, user?._id]);
+
+	const handleAddressNext = async () => {
+		if (saveAddress && isAuthenticated) {
+			setSavingAddress(true);
+			setError("");
+
+			try {
+				const result = await apiRequest("/user/address", {
+					method: "PUT",
+					body: JSON.stringify(formToShippingPayload(address)),
+				});
+				dispatch(updateShippingAddress(result.data));
+			} catch (addressError) {
+				setError(
+					addressError.message || "Unable to save address",
+				);
+				setSavingAddress(false);
+				return;
+			}
+
+			setSavingAddress(false);
+		}
+
+		goToStep(3);
+	};
+
+	const completeOrder = () => {
+		dispatch(clearCart());
+		setDone(true);
+	};
+
+	const handleCodOrder = async () => {
+		await apiRequest("/order", {
+			method: "POST",
+			body: JSON.stringify(
+				buildOrderPayload({
+					items,
+					address,
+					paymentMethod: "cod",
+				}),
+			),
+		});
+
+		completeOrder();
+	};
+
+	const handleRazorpayOrder = async () => {
+		if (!RAZORPAY_KEY_ID) {
+			throw new Error("Missing VITE_RAZORPAY_KEY_ID in frontend env");
+		}
+
+		await loadRazorpayScript();
+
+		const checkout = await apiRequest("/order/razorpay", {
+			method: "POST",
+			body: JSON.stringify(
+				buildOrderPayload({
+					items,
+					address,
+					paymentMethod: "razorpay",
+				}),
+			),
+		});
+
+		const razorpayOrder = checkout.razorpayOrder;
+		const dbOrder = checkout.order;
+
+		await new Promise((resolve, reject) => {
+			const razorpay = new window.Razorpay({
+				key: RAZORPAY_KEY_ID,
+				amount: razorpayOrder.amount,
+				currency: razorpayOrder.currency,
+				name: "BloomDusk",
+				description: "BloomDusk order payment",
+				order_id: razorpayOrder.id,
+				prefill: {
+					name: address.name,
+					email: address.email,
+					contact: address.phone,
+				},
+				notes: {
+					orderId: dbOrder._id,
+				},
+				theme: {
+					color: "#9b6bff",
+				},
+				handler: async (response) => {
+					try {
+						await apiRequest("/payment/verify", {
+							method: "POST",
+							body: JSON.stringify(response),
+						});
+						resolve();
+					} catch (paymentError) {
+						reject(paymentError);
+					}
+				},
+				modal: {
+					ondismiss: () =>
+						reject(new Error("Payment was cancelled")),
+				},
+			});
+
+			razorpay.open();
+		});
+
+		completeOrder();
+	};
+
+	const handlePlace = async (method) => {
+		if (!isAuthenticated) {
+			navigate("/login");
+			return;
+		}
+
+		if (!items.length) {
+			setError("Your cart is empty.");
+			return;
+		}
+
 		setLoading(true);
-		setTimeout(() => {
+		setError("");
+
+		try {
+			if (method === "cod") {
+				await handleCodOrder();
+			} else {
+				await handleRazorpayOrder();
+			}
+		} catch (orderError) {
+			setError(orderError.message || "Unable to place order");
+		} finally {
 			setLoading(false);
-			dispatch(clearCart());
-			setDone(true);
-		}, 2000);
+		}
 	};
 
 	const stepTitles = [
@@ -893,6 +1086,11 @@ export default function CheckoutPage() {
 
 								{/* Animated form content */}
 								<div ref={contentRef}>
+									{error && (
+										<p className="mb-5 rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-[12px] font-bold text-red-600">
+											{error}
+										</p>
+									)}
 									{step === 1 && (
 										<StepReview
 											items={items}
@@ -905,12 +1103,14 @@ export default function CheckoutPage() {
 										<StepAddress
 											address={address}
 											setAddress={setAddress}
-											onNext={() =>
-												goToStep(3)
-											}
+											onNext={handleAddressNext}
 											onBack={() =>
 												goToStep(1)
 											}
+											saveAddress={saveAddress}
+											setSaveAddress={setSaveAddress}
+											isAuthenticated={isAuthenticated}
+											savingAddress={savingAddress}
 										/>
 									)}
 									{step === 3 && (

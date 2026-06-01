@@ -1,4 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 import AppLayout from "./components/layout/AppLayout";
 import Homepage from "./pages/Homepage";
 import ProductPage from "./pages/ProductPage";
@@ -6,8 +8,15 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import CheckoutPage from "./pages/Checkout";
 import ScrollToTop from "./components/layout/ScrollToTop";
+import { fetchProducts } from "./store/productSlice";
 
 function App() {
+	const dispatch = useDispatch();
+
+	useEffect(() => {
+		dispatch(fetchProducts());
+	}, [dispatch]);
+
 	return (
 		<BrowserRouter>
 			<ScrollToTop />

@@ -22,6 +22,7 @@ import {
 	selectCartTotal,
 	adjustQty,
 } from "../../store/cartSlice";
+import { logout, selectUser } from "../../store/authSlice";
 
 const NAV_LINKS = [
 	{ label: "Shop", id: "shop" },
@@ -884,6 +885,8 @@ export function UserPopup({ open, onClose }) {
 	const overlayRef = useRef(null);
 	const panelRef = useRef(null);
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	const user = useSelector(selectUser);
 
 	useEffect(() => {
 		if (open) {
@@ -996,7 +999,7 @@ export function UserPopup({ open, onClose }) {
 						margin: "0 0 6px",
 					}}
 				>
-					Your BloomDusk Account
+					{user ? `Hi, ${user.firstName}` : "Your BloomDusk Account"}
 				</h3>
 				<p
 					style={{
@@ -1007,8 +1010,9 @@ export function UserPopup({ open, onClose }) {
 						margin: "0 0 24px",
 					}}
 				>
-					Sign in to access your bag, save favorites, and manage
-					your custom story.
+					{user
+						? "You are signed in and ready for checkout."
+						: "Sign in to access your bag, save favorites, and manage your custom story."}
 				</p>
 
 				{/* Options */}
@@ -1022,7 +1026,12 @@ export function UserPopup({ open, onClose }) {
 				>
 					<button
 						onClick={() =>
-							handleClose(() => navigate("/login"))
+							user
+								? handleClose(() => {
+										dispatch(logout());
+										navigate("/");
+									})
+								: handleClose(() => navigate("/login"))
 						}
 						style={{
 							width: "100%",
@@ -1052,46 +1061,48 @@ export function UserPopup({ open, onClose }) {
 								"translateY(0)";
 						}}
 					>
-						Sign In
-						<ArrowUpRight size={14} strokeWidth={2.5} />
+						{user ? "Sign Out" : "Sign In"}
+						{!user && <ArrowUpRight size={14} strokeWidth={2.5} />}
 					</button>
 
-					<button
-						onClick={() =>
-							handleClose(() => navigate("/register"))
-						}
-						style={{
-							width: "100%",
-							height: "46px",
-							background: "transparent",
-							border: "1.5px solid rgba(155,107,255,0.35)",
-							borderRadius: "14px",
-							fontFamily: "'DM Sans', sans-serif",
-							fontSize: "13.5px",
-							fontWeight: 700,
-							color: "#9b6bff",
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							gap: "6px",
-							transition: "all 0.2s ease",
-						}}
-						onMouseEnter={(e) => {
-							e.currentTarget.style.background =
-								"rgba(155,107,255,0.07)";
-							e.currentTarget.style.borderColor =
-								"#9b6bff";
-						}}
-						onMouseLeave={(e) => {
-							e.currentTarget.style.background =
-								"transparent";
-							e.currentTarget.style.borderColor =
-								"rgba(155,107,255,0.35)";
-						}}
-					>
-						Create Account
-					</button>
+					{!user && (
+						<button
+							onClick={() =>
+								handleClose(() => navigate("/register"))
+							}
+							style={{
+								width: "100%",
+								height: "46px",
+								background: "transparent",
+								border: "1.5px solid rgba(155,107,255,0.35)",
+								borderRadius: "14px",
+								fontFamily: "'DM Sans', sans-serif",
+								fontSize: "13.5px",
+								fontWeight: 700,
+								color: "#9b6bff",
+								cursor: "pointer",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								gap: "6px",
+								transition: "all 0.2s ease",
+							}}
+							onMouseEnter={(e) => {
+								e.currentTarget.style.background =
+									"rgba(155,107,255,0.07)";
+								e.currentTarget.style.borderColor =
+									"#9b6bff";
+							}}
+							onMouseLeave={(e) => {
+								e.currentTarget.style.background =
+									"transparent";
+								e.currentTarget.style.borderColor =
+									"rgba(155,107,255,0.35)";
+							}}
+						>
+							Create Account
+						</button>
+					)}
 				</div>
 
 				{/* Close hint */}

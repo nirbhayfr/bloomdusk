@@ -4,11 +4,9 @@
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import gsap from "gsap";
-import { PRODUCTS } from "../../store/productSlice";
-
-/* ─── DATA ─────────────────────────────────────────────────────────── */
-const products = PRODUCTS;
+import { selectAllProducts } from "../../store/productSlice";
 
 /* ─── PRODUCT CARD ──────────────────────────────────────────────────── */
 function ProductCard({ product, onClick }) {
@@ -163,6 +161,7 @@ function ProductSlider() {
 	const scrollLeft = useRef(0);
 	const [activeIdx, setActiveIdx] = useState(0);
 	const navigate = useNavigate();
+	const products = useSelector(selectAllProducts);
 
 	const startXPos = useRef(0);
 	const startYPos = useRef(0);
@@ -369,6 +368,8 @@ function ProductSlider() {
 export default function HeroSection() {
 	const heroRef = useRef(null);
 	const navigate = useNavigate();
+	const products = useSelector(selectAllProducts);
+	const firstProductId = products[0]?.id;
 
 	useEffect(() => {
 		const ctx = gsap.context(() => {
@@ -507,7 +508,12 @@ export default function HeroSection() {
 							</p>
 
 							<button
-								onClick={() => navigate("/product/1")}
+								onClick={() => {
+									if (firstProductId) {
+										navigate(`/product/${firstProductId}`);
+									}
+								}}
+								disabled={!firstProductId}
 								className="group relative overflow-hidden rounded-full bg-white p-[1px] shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_6px_24px_rgba(0,0,0,0.18)] w-fit"
 							>
 								<div className="absolute right-0 top-0 h-full w-0 rounded-full bg-[#9B6BFF] transition-all duration-500 ease-out group-hover:left-0 group-hover:w-full" />

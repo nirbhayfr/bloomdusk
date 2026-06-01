@@ -2,25 +2,28 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, ArrowUpRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { login, selectAuth } from "../store/authSlice";
 
 export default function LoginPage() {
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	const { loading, error } = useSelector(selectAuth);
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPass, setShowPass] = useState(false);
-	const [loading, setLoading] = useState(false);
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
 
-		setLoading(true);
-
-		setTimeout(() => {
-			setLoading(false);
+		try {
+			await dispatch(login({ email, password })).unwrap();
 			navigate("/");
-		}, 1500);
+		} catch {
+			// error is rendered from auth state
+		}
 	};
 
 	return (
@@ -126,6 +129,11 @@ export default function LoginPage() {
 									onSubmit={handleSubmit}
 									className="mt-10 space-y-5"
 								>
+									{error && (
+										<p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+											{error}
+										</p>
+									)}
 									{/* EMAIL */}
 									<div>
 										<label className="mb-2 block text-[11px] font-bold uppercase tracking-[2px] text-[#9B6BFF]">
