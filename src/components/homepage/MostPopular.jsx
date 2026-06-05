@@ -198,22 +198,24 @@ function ProductCard({ product, index }) {
 				{/* add to cart */}
 				<button
 					ref={buttonRef}
+					disabled={product.stock === 0}
 					onClick={(e) => {
 						e.stopPropagation();
+						if (product.stock === 0) return;
 						dispatch(addToCart(product));
 						setAdded(true);
 						setTimeout(() => setAdded(false), 1400);
 					}}
-					className="group/button relative overflow-hidden rounded-full px-3 py-2 text-[10px] tracking-[0.06em] text-white transition-all duration-300 hover:scale-[1.02] font-semibold"
+					className="group/button relative overflow-hidden rounded-full px-3 py-2 text-[10px] tracking-[0.06em] text-white transition-all duration-300 hover:scale-[1.02] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
 					style={{
-						background: added ? "#22c55e" : "#111",
+						background: product.stock === 0 ? "#888" : (added ? "#22c55e" : "#111"),
 						transition: "background 0.3s ease",
 					}}
 				>
 					<span className="relative z-10">
-						{added ? "✓ ADDED" : "ADD TO CART"}
+						{product.stock === 0 ? "OUT OF STOCK" : (added ? "✓ ADDED" : "ADD TO CART")}
 					</span>
-					{!added && (
+					{product.stock > 0 && !added && (
 						<div className="absolute inset-0 origin-left scale-x-0 bg-[#2a2a2a] transition-transform duration-500 group-hover/button:scale-x-100" />
 					)}
 				</button>

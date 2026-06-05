@@ -23,6 +23,7 @@ import {
 	adjustQty,
 } from "../../store/cartSlice";
 import { logout, selectUser } from "../../store/authSlice";
+import { selectAllProducts } from "../../store/productSlice";
 
 const NAV_LINKS = [
 	{ label: "Shop", id: "shop" },
@@ -47,22 +48,18 @@ export function SearchPopup({ open, onClose }) {
 	const overlayRef = useRef(null);
 	const panelRef = useRef(null);
 	const inputRef = useRef(null);
+	const navigate = useNavigate();
 	const [query, setQuery] = useState("");
 
-	const suggestions = [
-		"Marine Noir",
-		"Ivory Oud",
-		"Pink Veil",
-		"Floral Collection",
-		"Oud Intense",
-		"Summer Bloom",
-	];
+	const products = useSelector(selectAllProducts);
 
 	const filtered = query
-		? suggestions.filter((s) =>
-				s.toLowerCase().includes(query.toLowerCase()),
+		? products.filter(
+				(p) =>
+					p.name.toLowerCase().includes(query.toLowerCase()) ||
+					p.category.toLowerCase().includes(query.toLowerCase()),
 			)
-		: suggestions;
+		: products.slice(0, 6);
 
 	useEffect(() => {
 		if (open) {
@@ -197,7 +194,7 @@ export function SearchPopup({ open, onClose }) {
 				</div>
 
 				{/* Results */}
-				<div style={{ padding: "12px 0 8px" }}>
+				<div style={{ padding: "12px 0 8px", maxHeight: "360px", overflowY: "auto" }}>
 					<p
 						style={{
 							fontFamily: "'DM Sans', sans-serif",
@@ -225,13 +222,13 @@ export function SearchPopup({ open, onClose }) {
 							No results for &ldquo;{query}&rdquo;
 						</p>
 					) : (
-						filtered.map((s, i) => (
+						filtered.map((p) => (
 							<div
-								key={i}
+								key={p.id}
 								style={{
 									display: "flex",
 									alignItems: "center",
-									gap: "12px",
+									gap: "14px",
 									padding: "10px 20px",
 									cursor: "pointer",
 									transition:
@@ -245,34 +242,81 @@ export function SearchPopup({ open, onClose }) {
 									(e.currentTarget.style.background =
 										"transparent")
 								}
-								onClick={() => setQuery(s)}
+								onClick={() => {
+									handleClose();
+									navigate(`/product/${p.id}`);
+								}}
 							>
-								<Search
-									size={13}
-									strokeWidth={2}
+								<div
 									style={{
-										color: "rgba(15,15,15,0.3)",
-									}}
-								/>
-								<span
-									style={{
-										fontFamily:
-											"'DM Sans', sans-serif",
-										fontSize: "14px",
-										fontWeight: 500,
-										color: "#0f0f0f",
-										flex: 1,
+										width: "36px",
+										height: "36px",
+										borderRadius: "8px",
+										background: p.bg || "rgba(155,107,255,0.05)",
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										flexShrink: 0,
 									}}
 								>
-									{s}
-								</span>
-								<ArrowUpRight
-									size={13}
-									strokeWidth={2}
-									style={{
-										color: "rgba(155,107,255,0.5)",
-									}}
-								/>
+									<img
+										src={p.image || "/bottle.png"}
+										alt={p.name}
+										style={{
+											width: "28px",
+											height: "28px",
+											objectFit: "contain",
+										}}
+									/>
+								</div>
+								<div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+									<span
+										style={{
+											fontFamily:
+												"'DM Sans', sans-serif",
+											fontSize: "14px",
+											fontWeight: 600,
+											color: "#0f0f0f",
+											lineHeight: 1.2,
+											whiteSpace: "nowrap",
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+										}}
+									>
+										{p.name}
+									</span>
+									<span
+										style={{
+											fontFamily:
+												"'DM Sans', sans-serif",
+											fontSize: "11px",
+											color: "rgba(15,15,15,0.45)",
+											marginTop: "2px",
+										}}
+									>
+										{p.category}
+									</span>
+								</div>
+								<div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+									<span
+										style={{
+											fontFamily:
+												"'DM Sans', sans-serif",
+											fontSize: "13px",
+											fontWeight: 700,
+											color: "#0f0f0f",
+										}}
+									>
+										₹{p.price}
+									</span>
+									<ArrowUpRight
+										size={13}
+										strokeWidth={2}
+										style={{
+											color: "rgba(155,107,255,0.5)",
+										}}
+									/>
+								</div>
 							</div>
 						))
 					)}
@@ -688,6 +732,7 @@ export function CartPopup({ open, onClose }) {
 													{item.qty}
 												</span>
 												<button
+													disabled={item.qty >= item.stock}
 													onClick={() =>
 														adjust(
 															item.id,
@@ -707,8 +752,21 @@ export function CartPopup({ open, onClose }) {
 															"center",
 														justifyContent:
 															"center",
-														cursor: "pointer",
-														color: "#0f0f0f",
+														cursor:
+															item.qty >=
+															item.stock
+																? "not-allowed"
+																: "pointer",
+														color:
+															item.qty >=
+															item.stock
+																? "rgba(15,15,15,0.25)"
+																: "#0f0f0f",
+														opacity:
+															item.qty >=
+															item.stock
+																? 0.4
+																: 1,
 													}}
 												>
 													<Plus
@@ -1143,6 +1201,8 @@ export default function Header({
 }) {
 	const [open, setOpen] = useState(false);
 	const navigate = useNavigate();
+	const user = useSelector(selectUser);
+
 
 	useEffect(() => {
 		document.body.style.overflow = open ? "hidden" : "";
@@ -1172,7 +1232,16 @@ export default function Header({
 								{link.label}
 							</button>
 						))}
+						{user?.role === "admin" && (
+							<button
+								onClick={() => navigate("/admin")}
+								className="text-sm font-semibold text-[#9b6bff] transition-opacity hover:opacity-55"
+							>
+								Admin Panel
+							</button>
+						)}
 					</div>
+
 
 					<div className="ml-1 flex items-center gap-4">
 						<button onClick={onSearchOpen}>
@@ -1267,7 +1336,19 @@ export default function Header({
 							{link.label}
 						</div>
 					))}
+					{user?.role === "admin" && (
+						<div
+							onClick={() => {
+								navigate("/admin");
+								setOpen(false);
+							}}
+							className="cursor-pointer border-b border-black/5 py-3 text-[28px] font-semibold tracking-[-0.04em] text-[#9b6bff] transition-colors hover:text-[#9b6bff] last:border-b-0"
+						>
+							Admin Panel
+						</div>
+					)}
 				</nav>
+
 
 				<button
 					onClick={() => {

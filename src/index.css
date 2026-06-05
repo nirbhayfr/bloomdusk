@@ -50,3 +50,50 @@
 .animate-overlay-in {
   animation: overlayIn 0.3s ease;
 }
+
+/* ─── Admin Panel Animations ─────────────────────────────── */
+
+@keyframes slideLeft {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideLeft {
+  animation: slideLeft 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease forwards;
+}

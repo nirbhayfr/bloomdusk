@@ -17,6 +17,7 @@ import {
 	Truck,
 	RotateCcw,
 	ShieldCheck,
+	Package,
 } from "lucide-react";
 import gsap from "gsap";
 import { selectProductById, selectAllProducts } from "../store/productSlice";
@@ -107,12 +108,10 @@ export default function ProductPage() {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 
-	const product =
-		useSelector(selectProductById(id)) ||
-		useSelector(selectAllProducts)[0];
+	const product = useSelector(selectProductById(id));
 
 	const [activeImg, setActiveImg] = useState(0);
-	const [qty, setQty] = useState(1);
+	const [qty, setQty] = useState(product?.stock > 0 ? 1 : 0);
 	const [wished, setWished] = useState(false);
 	const [addedToCart, setAddedToCart] = useState(false);
 
@@ -121,8 +120,8 @@ export default function ProductPage() {
 
 	useEffect(() => {
 		setActiveImg(0);
-		setQty(1);
-	}, [id]);
+		setQty(product?.stock > 0 ? 1 : 0);
+	}, [id, product]);
 
 	useEffect(() => {
 		const ctx = gsap.context(() => {
@@ -151,7 +150,25 @@ export default function ProductPage() {
 		return () => ctx.revert();
 	}, [id]);
 
-	if (!product) return null;
+	if (!product) {
+		return (
+			<div className="min-h-screen bg-[#f3f1f4] flex flex-col items-center justify-center p-5 pt-[120px]">
+				<div className="mx-auto bg-white rounded-[28px] p-8 max-w-md w-full shadow-lg text-center animate-overlay-in">
+					<Package className="mx-auto text-[#9b6bff]/50 mb-4" size={48} />
+					<h2 className="text-xl font-bold text-[#0f0f0f] mb-2">Product Unavailable</h2>
+					<p className="text-sm text-black/55 mb-6">
+						This product is currently out of stock, draft, or unavailable.
+					</p>
+					<button
+						onClick={() => navigate("/")}
+						className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0f0f0f] px-6 text-xs font-bold text-white transition hover:bg-[#9b6bff] cursor-pointer"
+					>
+						Return to Shop
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	const switchImage = (idx) => {
 		if (idx === activeImg) return;
@@ -399,12 +416,13 @@ export default function ProductPage() {
 							<div className="flex gap-2.5 items-center mb-2.5">
 								<div className="flex items-center bg-black/[0.04] border border-black/[0.08] rounded-[14px] p-1 flex-shrink-0">
 									<button
+										disabled={product.stock === 0}
 										onClick={() =>
 											setQty((q) =>
 												Math.max(1, q - 1),
 											)
 										}
-										className="w-8 h-8 rounded-[10px] flex items-center justify-center bg-transparent border-none cursor-pointer text-[#0f0f0f] hover:bg-black/[0.06] transition-colors"
+										className="w-8 h-8 rounded-[10px] flex items-center justify-center bg-transparent border-none cursor-pointer text-[#0f0f0f] hover:bg-black/[0.06] transition-colors disabled:opacity-40"
 									>
 										<Minus
 											size={13}
@@ -415,10 +433,11 @@ export default function ProductPage() {
 										{qty}
 									</span>
 									<button
+										disabled={product.stock === 0 || qty >= product.stock}
 										onClick={() =>
-											setQty((q) => q + 1)
+											setQty((q) => Math.min(product.stock, q + 1))
 										}
-										className="w-8 h-8 rounded-[10px] flex items-center justify-center bg-transparent border-none cursor-pointer text-[#0f0f0f] hover:bg-black/[0.06] transition-colors"
+										className="w-8 h-8 rounded-[10px] flex items-center justify-center bg-transparent border-none cursor-pointer text-[#0f0f0f] hover:bg-black/[0.06] transition-colors disabled:opacity-40"
 									>
 										<Plus
 											size={13}
@@ -428,15 +447,20 @@ export default function ProductPage() {
 								</div>
 
 								<button
+									disabled={product.stock === 0}
 									onClick={handleAddToCart}
 									className={[
-										"flex-1 h-11 rounded-[14px] flex items-center justify-center gap-2 text-white text-[13px] font-extrabold tracking-[-0.01em] cursor-pointer border-none transition-all duration-300",
-										addedToCart
-											? "bg-[#22c55e]"
-											: "bg-[#0f0f0f] hover:bg-[#9b6bff]",
+										"flex-1 h-11 rounded-[14px] flex items-center justify-center gap-2 text-white text-[13px] font-extrabold tracking-[-0.01em] cursor-pointer border-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed",
+										product.stock === 0
+											? "bg-gray-400"
+											: addedToCart
+												? "bg-[#22c55e]"
+												: "bg-[#0f0f0f] hover:bg-[#9b6bff]",
 									].join(" ")}
 								>
-									{addedToCart ? (
+									{product.stock === 0 ? (
+										"Out of Stock"
+									) : addedToCart ? (
 										<>&#10003; Added to Cart</>
 									) : (
 										<>
@@ -451,21 +475,23 @@ export default function ProductPage() {
 							</div>
 
 							{/* Buy Now */}
-							<button
-								onClick={() => {
-									dispatch(
-										addToCart({ product, qty }),
-									);
-									navigate("/");
-								}}
-								className="w-full h-11 rounded-[14px] bg-transparent border-[1.5px] border-[rgba(155,107,255,0.35)] text-[#9b6bff] text-[13px] font-bold tracking-[-0.01em] flex items-center justify-center gap-2 cursor-pointer mb-5 transition-all duration-200 hover:bg-[rgba(155,107,255,0.07)] hover:border-[#9b6bff]"
-							>
-								Buy Now
-								<ArrowUpRight
-									size={14}
-									strokeWidth={2.5}
-								/>
-							</button>
+							{product.stock > 0 && (
+								<button
+									onClick={() => {
+										dispatch(
+											addToCart({ product, qty }),
+										);
+										navigate("/checkout");
+									}}
+									className="w-full h-11 rounded-[14px] bg-transparent border-[1.5px] border-[rgba(155,107,255,0.35)] text-[#9b6bff] text-[13px] font-bold tracking-[-0.01em] flex items-center justify-center gap-2 cursor-pointer mb-5 transition-all duration-200 hover:bg-[rgba(155,107,255,0.07)] hover:border-[#9b6bff]"
+								>
+									Buy Now
+									<ArrowUpRight
+										size={14}
+										strokeWidth={2.5}
+									/>
+								</button>
+							)}
 
 							{/* Accordions */}
 							<div>

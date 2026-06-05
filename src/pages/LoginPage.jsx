@@ -19,12 +19,17 @@ export default function LoginPage() {
 		e.preventDefault();
 
 		try {
-			await dispatch(login({ email, password })).unwrap();
-			navigate("/");
+			const res = await dispatch(login({ email, password })).unwrap();
+			if (res?.user?.role === "admin") {
+				navigate("/admin");
+			} else {
+				navigate("/");
+			}
 		} catch {
 			// error is rendered from auth state
 		}
 	};
+
 
 	return (
 		<div className="min-h-screen bg-[#f3f1f4] p-2 md:p-3">

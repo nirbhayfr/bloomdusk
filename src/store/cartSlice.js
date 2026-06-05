@@ -35,8 +35,12 @@ const cartSlice = createSlice({
 			const qty = payload.qty ? payload.qty : 1;
 
 			const existing = state.items.find((i) => i.id === product.id);
+			const limit = product.stock !== undefined ? product.stock : 999;
 			if (existing) {
-				existing.qty += qty;
+				existing.qty = Math.min(existing.qty + qty, limit);
+				if (product.stock !== undefined) {
+					existing.stock = product.stock;
+				}
 			} else {
 				state.items.push({
 					id: product.id,
@@ -44,7 +48,8 @@ const cartSlice = createSlice({
 					category: product.category,
 					price: product.price,
 					image: product.image,
-					qty: qty,
+					qty: Math.min(qty, limit),
+					stock: limit,
 				});
 			}
 			saveCartToStorage(state.items);
@@ -62,6 +67,10 @@ const cartSlice = createSlice({
 			const { id, delta } = action.payload;
 			const item = state.items.find((i) => i.id === id);
 			if (!item) return;
+			const limit = item.stock !== undefined ? item.stock : 999;
+			if (delta > 0 && item.qty >= limit) {
+				return;
+			}
 			item.qty += delta;
 			if (item.qty <= 0) {
 				state.items = state.items.filter((i) => i.id !== id);

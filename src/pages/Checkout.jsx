@@ -239,6 +239,7 @@ function OrderSummary({ items, total, dispatch, step }) {
 										{item.qty}
 									</span>
 									<button
+										disabled={item.qty >= item.stock}
 										onClick={() =>
 											dispatch(
 												adjustQty({
@@ -247,7 +248,7 @@ function OrderSummary({ items, total, dispatch, step }) {
 												}),
 											)
 										}
-										className="w-5 h-5 flex items-center justify-center rounded-[7px] text-[#0f0f0f] hover:bg-black/[0.06] transition-colors cursor-pointer"
+										className="w-5 h-5 flex items-center justify-center rounded-[7px] text-[#0f0f0f] hover:bg-black/[0.06] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
 									>
 										<Plus
 											size={9}

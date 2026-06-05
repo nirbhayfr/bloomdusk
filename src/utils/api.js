@@ -18,12 +18,17 @@ export const getStoredAuth = () => {
 export const setStoredAuth = ({ token, user }) => {
 	localStorage.setItem("bloomdusk_token", token);
 	localStorage.setItem("bloomdusk_user", JSON.stringify(user));
+	if (user && user.role) {
+		localStorage.setItem("bloomdusk_role", user.role);
+	}
 };
 
 export const clearStoredAuth = () => {
 	localStorage.removeItem("bloomdusk_token");
 	localStorage.removeItem("bloomdusk_user");
+	localStorage.removeItem("bloomdusk_role");
 };
+
 
 export const apiRequest = async (path, options = {}) => {
 	const { token } = getStoredAuth();
